@@ -70,7 +70,6 @@
         <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script src='http://d3js.org/d3.v3.min.js'></script>
         <script src="https://raw.githubusercontent.com/kevinschaul/d3-star-plot/master/dist/d3-star-plot-0.0.3.min.js"></script>
-        <!--script src="d3-star.js"></script-->
         <script>
             var width = 640;
             var height = 480;
@@ -236,16 +235,6 @@
                 }
             }
             
-            function getConversationCountsFor(dataPoint) {
-                var conversationCounts = 0;
-                for (i = 0; i < talksWith.length; i++) {
-                    if (talksWith[i].source == dataPoint || talksWith[i].target == dataPoint) {
-                        conversationCounts += talksWith[i].weight;
-                    }
-                }
-                return conversationCounts;
-            }
-            
             var regionColors;
             if (regions.length <= 10) {
                 regionColors = d3.scale.category10();
@@ -270,6 +259,7 @@
                 .enter().append('line')
                 .attr('class', 'link');
 
+            var infoDiv = d3.select("body").append("div");
             var node = svg.selectAll('.node')
                 .data(rawData)
                 .enter()
@@ -285,34 +275,12 @@
                     
             force.on('tick', function() {
                 
-                node
-                    .attr("transform", function(d) {
+                node.attr("transform", function(d) {
                         var conversationCounts = getConversationCountsFor(d);
                         var sWidth = conversationCounts*starScaleFactor + starMargin.left + starMargin.right;
                         var sHeight = conversationCounts*starScaleFactor + starMargin.top + starMargin.bottom;
-                        return "translate(" + (d.x-sWidth/2) + "," + (d.y-sHeight/2-starLabelMargin) + ")"; });
-//                    .attr('width', function(d) {
-//                        var conversationCounts = 0;
-//                        for (i = 0; i < talksWith.length; i++) {
-//                            if (talksWith[i].source == d || talksWith[i].target == d) {
-//                                conversationCounts += talksWith[i].weight;
-//                            }
-//                        }
-//                        return starWidth + starMargin.left + starMargin.right;
-//                    })
-//                    .attr('height', function(d) {
-//                        var conversationCounts = 0;
-//                        for (i = 0; i < talksWith.length; i++) {
-//                            if (talksWith[i].source == d || talksWith[i].target == d) {
-//                                conversationCounts += talksWith[i].weight;
-//                            }
-//                        }
-//                        return starWidth + starMargin.left + starMargin.right;
-//                    })
-//                    .attr('x', function(d) { return d.x; })
-//                    .attr('y', function(d) { return d.y; })
-//                    .style("fill", function(d) {
-//                        return regionColors(d.region) });
+                        return "translate(" + (d.x-sWidth/2) + "," + (d.y-sHeight/2-starLabelMargin) + ")";
+                    });
                     
                 link.attr('x1', function(d) { return d.source.x; })
                     .attr('y1', function(d) { return d.source.y; })
@@ -328,10 +296,7 @@
                 .attr("class", "wrapper")
                 .attr("width", 300)
                 .attr("height", 300));
-            
-            
-            
-            
+                        
             function createStarPlot(data, location) {
                 var propertyMin = 0;
                 var propertyMax = 100;
@@ -344,14 +309,29 @@
                 var sWidth = conversationCounts*starScaleFactor + starMargin.left + starMargin.right;
                 var sHeight = conversationCounts*starScaleFactor + starMargin.top + starMargin.bottom;
 
+                var variableKeys = Object.keys(data.variables);
+
                 var star = d3.starPlot()
                     .width(sWidth - starMargin.left - starMargin.right)
-                    .properties(Object.keys(data.variables))
+                    .properties(variableKeys)
                     .scales(starScale)
-                    .labels(Object.keys(data.variables))
+                    .labels(variableKeys)
                     .margin(starMargin)
                     .labelMargin(starLabelMargin)
                     .includeLabels(false);
+
+                location.on("click", function() {
+                        console.log(data);
+                        infoDiv.selectAll("*").remove();
+                        infoDiv.append("h3").text("Info on data file " + data.id);
+                        infoDiv.append("p").text("Conversation: " + data.pid + " talking to " + data.to);
+                        infoDiv.append("p").text("Region: " + data.region)
+                        
+                        var list = infoDiv.append("li").text("Variables");
+                        for (i = 0; i < variableKeys.length; i++) {
+                            list.append("ul").text(data.variables[variableKeys[i]]);
+                        }
+                    });
 
                 var svg2 = location.append('svg')
                     .attr('class', 'chart')
@@ -375,6 +355,12 @@
                 var interaction = location.selectAll('.interaction')
                     .style('display', 'none');
 
+                location.selectAll(".star-path")
+                    .style("stroke", regionColors(data.region))
+                    .style("fill", regionColors(data.region))
+                    .style("fill-opacity", conversationCounts/5);
+                    
+
                 location.selectAll('.star-interaction')
                     .on('mouseover', function(d) {
                         svg2.selectAll('.star-label').style('display', 'none');
@@ -392,6 +378,16 @@
                         svg2.selectAll('.star-label').style('display', 'block');
                         tooltip.text("");
                     });
+            }
+            
+            function getConversationCountsFor(dataPoint) {
+                var conversationCounts = 0;
+                for (i = 0; i < talksWith.length; i++) {
+                    if (talksWith[i].source == dataPoint || talksWith[i].target == dataPoint) {
+                        conversationCounts += talksWith[i].weight;
+                    }
+                }
+                return conversationCounts;
             }
         </script>
     </body>
