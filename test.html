@@ -72,8 +72,8 @@
         <script src="https://raw.githubusercontent.com/kevinschaul/d3-star-plot/master/dist/d3-star-plot-0.0.3.min.js"></script>
         <script>
             // SVG layout variables
-            var width = 640;
-            var height = 480;
+            var width = 800;
+            var height = 600;
             var innerPadding = 20;
             var outerPadding = 20;
             
@@ -213,12 +213,14 @@
                 }
             ];
             
-            // Determinw who talks with who and how many regions are in the data
+            // Determine who talks with who and how many regions are in the data
             var talksWith = [];
+            var inRegionWith = [];
             var regions = [];
+            var weightScale = 3;
             var i;
             for (i = 0; i < rawData.length; i++) {
-                var id = Number(rawData[i].pid.slice(1, rawData[i].pid.length));
+                var id = rawData[i].id;
                 var to = Number(rawData[i].to.slice(1, rawData[i].to.length));
                 
                 var alreadyLinked = false;
@@ -232,7 +234,25 @@
                         }
                 }
                 if (!alreadyLinked) {
-                    talksWith.push({ source: id, target: to, weight: 1 });
+                    talksWith.push({ source: id, target: to, weight: weightScale, visible: true});
+                }
+                
+                var k;
+                for (k = 0; k < rawData.length && i > k; k++) {
+                    var id2 = rawData[k].id;
+                    if (rawData[i].region == rawData[k].region) {
+                        var alreadyInRegionWith = false;
+                        for (j = 0; j < inRegionWith.length; j++) {
+                            if ((inRegionWith[j].source == id && inRegionWith[j].target == id2) ||
+                                (inRegionWith[j].source == id2 && inRegionWith[j].target == id)) {
+                                    alreadyInRegionWith = true;
+                                    break;
+                                }
+                        }
+                        if (!alreadyInRegionWith) {
+                            inRegionWith.push({ source: id, target: id2, weight: 1, visible: false})
+                        }
+                    }
                 }
                 
                 if (regions.indexOf(rawData[i].region) < 0) {
@@ -240,6 +260,7 @@
                 }
             }
             
+            var links = talksWith.concat(inRegionWith);
             
             // Dynamically determine region color scale
             var regionColors;
@@ -258,14 +279,21 @@
             // Force layout
             var force = d3.layout.force()
                 .charge(-300)
-                .linkDistance(function(d) { return 50/d.weight; })
+                .linkDistance(function(d) {
+                    if (d.visible) {
+                        return 100/Math.pow(2,d.weight-weightScale+1);
+                    }
+                    else {
+                        return 150;
+                    }
+                 })
                 .size([width, height])
                 .nodes(rawData)
-                .links(talksWith);
+                .links(links);
 
             // Links in the force layout
             var link = svg.selectAll('.link')
-                .data(talksWith)
+                .data(links)
                 .enter().append('line')
                 .attr('class', 'link');
 
@@ -298,12 +326,21 @@
                         return "translate(" + (d.x-sWidth/2) + "," + (d.y-sHeight/2-starLabelMargin) + ")";
                     });
                     
-                // Move the links and dynamically determine the width of the link
+                // Move the links, determine whether the link should be invisible,
+                // and dynamically determine the width of the link
                 link.attr('x1', function(d) { return d.source.x; })
                     .attr('y1', function(d) { return d.source.y; })
                     .attr('x2', function(d) { return d.target.x; })
                     .attr('y2', function(d) { return d.target.y; })
-                    .style("stroke-width", function(d) { return d.weight; });
+                    .attr("opacity", function(d) {
+                        if (d.visible) {
+                            return 1;
+                        }
+                        else {
+                            return 0;
+                        }
+                    })
+                    .style("stroke-width", function(d) { return 1.5*(d.weight-weightScale+1); });
             });
             
             // Make the force layout start
@@ -423,8 +460,10 @@
             function getConversationCountsFor(dataPoint) {
                 var conversationCounts = 0;
                 for (i = 0; i < talksWith.length; i++) {
-                    if (talksWith[i].source == dataPoint || talksWith[i].target == dataPoint) {
-                        conversationCounts += talksWith[i].weight;
+                    if (talksWith[i].visible &&
+                        (talksWith[i].source == dataPoint ||
+                        talksWith[i].target == dataPoint)) {
+                        conversationCounts += talksWith[i].weight-weightScale+1;
                     }
                 }
                 return conversationCounts;
