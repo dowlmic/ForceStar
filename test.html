@@ -304,7 +304,8 @@
                 .enter()
                     .append('g')
                     .attr('class', 'wrapper')
-                    .attr("id", function(d) { return d.id + "-star"; });
+                    .attr("id", function(d) { return d.id + "-star"; })
+                    .call(force.drag());
                     
             // When the force layout first starts, create a starplot for each node
             force.on("start", function() {
