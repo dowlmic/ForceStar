@@ -358,7 +358,6 @@
                     .attr('width', sWidth)
                     .attr('height', sHeight);
 
-//                var starG = svg2.append('g')
                 var starG = location.append("g")
                     .attr('class', 'chart')
                     .attr('width', sWidth)
@@ -366,9 +365,8 @@
                     .datum(data.variables)
                     .call(star)
                     .call(star.interaction);
-
-                var interactionLabel = location.append('g')
-                    .attr('class', 'interaction label')
+                
+                var tooltip = location.append("title");
 
                 var circle = svg2.append('circle')
                     .attr('class', 'interaction circle')
@@ -377,26 +375,22 @@
                 var interaction = location.selectAll('.interaction')
                     .style('display', 'none');
 
-                svg2.selectAll('.star-interaction')
+                location.selectAll('.star-interaction')
                     .on('mouseover', function(d) {
                         svg2.selectAll('.star-label').style('display', 'none');
 
                         interaction.style('display', 'block');
 
-                        circle
-                            .attr('cx', d.x)
+                        circle.attr('cx', d.x)
                             .attr('cy', d.y);
-
-                        $interactionLabel = $(interactionLabel.node());
-                        interactionLabel
-                            .text(d.key + ': ' + d.datum[d.key])
-                            .style('left', d.xExtent - ($interactionLabel.width() / 2))
-                            .style('top', d.yExtent - ($interactionLabel.height() / 2));
+                        
+                        tooltip.text(d.key + ": " + d.datum[d.key]);
                     })
                     .on('mouseout', function(d) {
                         interaction.style('display', 'none');
 
                         svg2.selectAll('.star-label').style('display', 'block');
+                        tooltip.text("");
                     });
             }
         </script>
