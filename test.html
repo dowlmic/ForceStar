@@ -5,6 +5,18 @@
         <title>D3 Vis</title>
         
         <style>
+            .col-md-8 {
+                border: 1px solid black;
+                padding: 5px;
+            }
+            .col-md-4 {
+                border: 1px solid black;
+                padding: 5px;
+            }
+            ul {
+                list-style-position: inside;
+            }
+            
             .node {
                 fill: #ccc;
                 stroke: #fff;
@@ -70,6 +82,14 @@
         <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
         <script src='http://d3js.org/d3.v3.min.js'></script>
         <script src="https://raw.githubusercontent.com/kevinschaul/d3-star-plot/master/dist/d3-star-plot-0.0.3.min.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
         <script>
             // SVG layout variables
             var width = 800;
@@ -271,9 +291,15 @@
                 regionColors = d3.scale.category20();
             }
 
+            var row = d3.select("body").append("div")
+                .attr("class", "container-fluid")
+                .style("margin", "5px")
+                .append("div")
+                .attr("class", "row");
+
             // Force layout SVG
-            var svg = d3.select('body').append('svg')
-                .attr('width', width)
+            var svg = row.append('svg')
+                .attr("class", "col-md-8")
                 .attr('height', height)
                 .call(d3.behavior.zoom().on("zoom", function () {
                     svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
@@ -302,14 +328,17 @@
                 .attr('class', 'link');
 
             // Nodes (starplots) and div for the information for a clicked node
-            var infoDiv = d3.select("body").append("div");
+            var infoDiv = row.append("div")
+                .attr("class", "col-md-4");
+            infoDiv.append("h2").text("Node Data");
+            
             var node = svg.selectAll('.node')
                 .data(rawData)
                 .enter()
                     .append('g')
                     .attr('class', 'wrapper')
                     .attr("id", function(d) { return d.id + "-star"; })
-                    .call(force.drag());
+//                    .call(force.drag());
                     
             // When the force layout first starts, create a starplot for each node
             force.on("start", function() {
@@ -392,13 +421,14 @@
                 // If the given location is clicked, show info on the data point
                 location.on("click", function() {
                         infoDiv.selectAll("*").remove();
+                        infoDiv.append("h2").text("Node Data");
                         infoDiv.append("h3").text("Info on data file " + data.id);
                         infoDiv.append("p").text("Conversation: " + data.pid + " talking to " + data.to);
                         infoDiv.append("p").text("Region: " + data.region)
                         
-                        var list = infoDiv.append("li").text("Variables");
+                        var list = infoDiv.append("ul").text("Variables");
                         for (i = 0; i < variableKeys.length; i++) {
-                            list.append("ul").text(data.variables[variableKeys[i]]);
+                            list.append("li").text(data.variables[variableKeys[i]]);
                         }
                     });
 
